@@ -1,16 +1,9 @@
-# 2️⃣ Przygotowanie danych
-
-# skrypt, który:
-# ✅ Ładuje dane z CSV
-# ✅ Dodaje etykiety do każdego powtórzenia gestu
-# ✅ Standaryzuje długość sekwencji (np. interpolacja do stałej liczby klatek)
-# ✅ Przygotowuje dane do modelu ML
-
 import os
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler
-from scipy.interpolate import interp1d
+from scipy.interpolate import interp1d  # Dodanie importu interp1d
+
 
 # Ścieżka do katalogu z danymi
 output_dir = "gestures_data"
@@ -52,7 +45,7 @@ def load_gesture_data(gesture_name, label, target_frames=100):
 # Przykład użycia - wczytaj gesty i oznacz je etykietami
 gestures = {
     "shake": 0,  # Gest "shake" = 0
-    "wave": 1,  # Gest "wave" = 1 (jeśli masz drugi gest)
+    # "wave": 1,  # Gest "wave" = 1 (jeśli masz drugi gest)
 }
 
 dataset = []
@@ -68,3 +61,16 @@ scaler = StandardScaler()
 X = np.array([scaler.fit_transform(seq) for seq in X])
 
 print(f"Przygotowano {len(X)} próbek do nauki.")
+
+
+# Description:
+# Masz dane dla dwóch gestów: shake (potrząsanie ręką) i wave (machanie ręką).
+# Każdy gest jest zapisany w wielu plikach CSV, które zawierają pozycje dłoni w czasie (np. 100 punktów w czasie dla każdego gestu).
+# Skrypt normalizuje długość tych sekwencji (wszystkie sekwencje mają 100 punktów).
+# Dla każdego gestu dodaje etykietę (0 dla "shake" i 1 dla "wave").
+# Normalizuje dane, aby wszystkie zmienne (x, y, z) były na podobnej skali.
+# Tworzy dwie tablice: jedna z danymi (pozycje dłoni), druga z etykietami (np. 0 lub 1 dla gestu).
+
+# Po co to wszystko?
+# Cały ten proces przygotowuje dane, które będą wprowadzone do modelu uczenia maszynowego.
+# Dzięki temu model komputerowy będzie mógł nauczyć się, jak rozpoznawać gesty (np. "shake" i "wave") na podstawie pozycji dłoni.
