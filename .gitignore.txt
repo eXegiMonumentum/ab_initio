@@ -24,6 +24,10 @@ Thumbs.db
 .idea/
 .vscode/
 *.log
+*.zip
+
+# Ignoruj cały folder z danymi gestów
+project_files/gestures_data/
 
 # 🛑 Ignorowanie plików zależności (ale nie requirements.txt)
 pip-log.txt
