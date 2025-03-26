@@ -1,11 +1,12 @@
 # Ignorowanie folderu z danymi
-project_files/gestures_data/
+project_files\gestures_data
 
 # Ignorowanie folderu projektu .idea
 .idea/
 
 # Ignorowanie plików ZIP
-*.zip
+shake.zip
 
 # Ignorowanie środowisk wirtualnych
 env38/
+
