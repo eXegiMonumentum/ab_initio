@@ -1,4 +1,4 @@
-# Ignorowanie folderu z danymi (gestures_data)
+# Ignorowanie folderu z danymi
 project_files/gestures_data/
 
 # Ignorowanie folderu projektu .idea
