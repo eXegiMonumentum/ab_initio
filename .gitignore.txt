@@ -1,0 +1,33 @@
+# 🛑 Ignorowanie wszystkich plików, oprócz skryptów Pythona
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+*.so
+
+# 🛑 Ignorowanie katalogów z danymi i wynikami
+gestures_data/
+*.zip
+*.csv
+*.avi
+
+# 🛑 Ignorowanie środowiska wirtualnego
+env/
+env*/
+.venv/
+.venv*/
+env38/
+
+# 🛑 Ignorowanie plików systemowych i edytorów
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.log
+
+# 🛑 Ignorowanie plików zależności (ale nie requirements.txt)
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ✅ Do repozytorium trafią tylko skrypty `.py` w `project_files/`
+!project_files/**/*.py
