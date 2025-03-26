@@ -31,3 +31,5 @@ pip-delete-this-directory.txt
 
 # ✅ Do repozytorium trafią tylko skrypty `.py` w `project_files/`
 !project_files/**/*.py
+
+gestures_data/
