@@ -9,25 +9,3 @@ project_files/gestures_data/
 
 # Ignorowanie środowisk wirtualnych
 env38/
-
-<<<<<<< HEAD
-# Ignorowanie plików wynikowych
-*.avi
-*.csv
-=======
-# 🛑 Ignorowanie plików systemowych i edytorów
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-*.log
-
-# 🛑 Ignorowanie plików zależności (ale nie requirements.txt)
-pip-log.txt
-pip-delete-this-directory.txt
-
-# ✅ Do repozytorium trafią tylko skrypty `.py` w `project_files/`
-!project_files/**/*.py
-
-gestures_data/
->>>>>>> cc979700d6a8f792426fdb9290c7111f202e91d3
