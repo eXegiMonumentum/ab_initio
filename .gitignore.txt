@@ -1,37 +1,15 @@
-# 🛑 Ignorowanie wszystkich plików, oprócz skryptów Pythona
-*.pyc
-*.pyo
-*.pyd
-__pycache__/
-*.so
-
-# 🛑 Ignorowanie katalogów z danymi i wynikami
-gestures_data/
-*.zip
-*.csv
-*.avi
-
-# 🛑 Ignorowanie środowiska wirtualnego
-env/
-env*/
-.venv/
-.venv*/
-env38/
-
-# 🛑 Ignorowanie plików systemowych i edytorów
-.DS_Store
-Thumbs.db
-.idea/
-.vscode/
-*.log
-*.zip
-
-# Ignoruj cały folder z danymi gestów
+# Ignorowanie folderu z danymi (gestures_data)
 project_files/gestures_data/
 
-# 🛑 Ignorowanie plików zależności (ale nie requirements.txt)
-pip-log.txt
-pip-delete-this-directory.txt
+# Ignorowanie folderu projektu .idea
+.idea/
 
-# ✅ Do repozytorium trafią tylko skrypty `.py` w `project_files/`
-!project_files/**/*.py
+# Ignorowanie plików ZIP
+*.zip
+
+# Ignorowanie środowisk wirtualnych
+env38/
+
+# Ignorowanie plików wynikowych
+*.avi
+*.csv
