@@ -91,9 +91,12 @@ def record_gesture(gesture_name, max_time=10):
 
             numbers = []
             for f in existing_files:
-                parts = f.replace("_positions.csv", "").split("_")
-                if len(parts) == 2 and parts[1].isdigit():
-                    numbers.append(int(parts[1]))
+                try:
+                    num_str = f[len(gesture_name) + 1:].split("_")[0]
+                    number = int(num_str)
+                    numbers.append(number)
+                except:
+                    continue
 
             return max(numbers) + 1 if numbers else 1
 
@@ -219,7 +222,7 @@ def main():
         choice = input("Wybierz opcję: ").strip()
 
         if choice == "1":
-            record_gesture(gesture_name)
+            record_gesture(gesture_name, max_time=3)
         elif choice == "2":
             animate_gesture(gesture_name)
         elif choice == "3":
