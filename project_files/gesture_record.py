@@ -5,192 +5,161 @@ import depthai as dai
 import mediapipe as mp
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-from mpl_toolkits.mplot3d import Axes3D
 import pandas as pd
+import time
 
-# 📂 Katalog bazowy na gesty
-output_dir = "gestures_data"
-os.makedirs(output_dir, exist_ok=True)
+def record_gesture(gesture_name, max_time=10):
+    """ MediaPipe śledzi rękę w postaci 21 punktów 3D – każdy palec i nadgarstek.
+        Dzięki temu różny rozstaw palców czy ruch będzie odwzorowany w danych (CSV).
+        Twoje dane będą tym lepsze, im więcej „wariantów” danego gestu nagrasz – czyli np.:
+        „shake” z różną energią
+        „shake” z szeroko rozstawionymi palcami
+        „shake” wykonany przez różne osoby
 
-# Ustawienia dla MediaPipe do rozpoznawania dłoni
-mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
-mp_drawing = mp.solutions.drawing_utils
+        !!!
+            Dla każdego gestu warto mieć nagrania:
 
-# 📌 Funkcja do znalezienia numeru pliku dla danego gestu
-def get_next_file_number(gesture_name):
-    gesture_dir = os.path.join(output_dir, gesture_name)
-    os.makedirs(gesture_dir, exist_ok=True)
+            z 3+ różnych kątów (np. na wprost, z boku, od góry),
 
-    existing_files = [f for f in os.listdir(gesture_dir) if
-                      f.startswith(f"{gesture_name}_") and f.endswith("_positions.csv")]
+            w 2-3 tempach (powolny, normalny, szybki),
 
-    if not existing_files:
-        return 1  # Jeśli nie ma plików, zaczynamy od 1
+            z małą losowością (nie musi być zawsze idealny ruch),
 
-    numbers = [int(f.split("_")[1]) for f in existing_files]
-    return max(numbers) + 1
+            lewą i prawą ręką (jeśli chcesz obsługiwać obie).
+        !!!
+    """
 
-# 📡 Funkcja sprawdzająca, czy kamera jest podłączona
-def check_camera_connection():
-    try:
-        # Tworzymy pipeline DepthAI
-        pipeline = dai.Pipeline()
+    output_dir = "gestures_data"
+    os.makedirs(output_dir, exist_ok=True)
 
-        # Tworzymy kamerę RGB
-        cam_rgb = pipeline.create(dai.node.ColorCamera)
-        cam_rgb.setBoardSocket(dai.CameraBoardSocket.RGB)
+    mp_hands = mp.solutions.hands
+    hands = mp_hands.Hands(min_detection_confidence=0.5, min_tracking_confidence=0.5)
+    mp_drawing = mp.solutions.drawing_utils
 
-        # Ustawiamy rozdzielczość RGB na 640x480 (jeśli chcesz VGA)
-        cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_640x480)  # Użycie THE_640x480
-
-        # Uruchamiamy urządzenie i pipeline
-        with dai.Device(pipeline) as device:
-            # Jeśli urządzenie zostało wykryte, zwrócimy True
-            if device is not None:
-                return True
-            else:
-                return False
-    except Exception as e:
-        print(f"❌ Błąd: {str(e)}")
-        return False
-
-# 🎥 Nagrywanie gestów
-def record_gesture(gesture_name):
-    """Nagrywa gest (RGB + Depth) i zapisuje dane o trajektorii dłoni do nowego pliku CSV."""
-    # Sprawdzanie, czy urządzenie DepthAI jest podłączone
-    if not check_camera_connection():
-        print("❌ Kamera DepthAI nie jest podłączona. Upewnij się, że kamera jest prawidłowo podłączona.")
-        return
-
-    # Tworzymy pipeline DepthAI
     pipeline = dai.Pipeline()
 
-    # Tworzymy kamerę RGB
+    # === Kamera RGB ===
     cam_rgb = pipeline.create(dai.node.ColorCamera)
     cam_rgb.setBoardSocket(dai.CameraBoardSocket.RGB)
-
-    # Ustawienie rozdzielczości kamery RGB na 1080p
-    cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080P)  # Użycie THE_1080P
+    cam_rgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
     cam_rgb.setFps(30)
+    cam_rgb.setInterleaved(False)
 
-    # Ustawiamy kamerę Depth
-    cam_depth = pipeline.create(dai.node.StereoDepth)
-    cam_depth.setBoardSocket(dai.CameraBoardSocket.LEFT)
+    # === Kamery Mono do StereoDepth ===
+    mono_left = pipeline.create(dai.node.MonoCamera)
+    mono_right = pipeline.create(dai.node.MonoCamera)
+    mono_left.setBoardSocket(dai.CameraBoardSocket.LEFT)
+    mono_right.setBoardSocket(dai.CameraBoardSocket.RIGHT)
+    mono_left.setResolution(dai.MonoCameraProperties.SensorResolution.THE_720_P)
+    mono_right.setResolution(dai.MonoCameraProperties.SensorResolution.THE_720_P)
 
-    # Ustawienie rozdzielczości Depth kamery na 720p
-    cam_depth.setResolution(dai.MonoCameraProperties.SensorResolution.THE_720P)  # Użycie THE_720P
-    cam_depth.setFps(30)
-    cam_depth.setDepthAlign(dai.CameraBoardSocket.RGB)
+    # === StereoDepth ===
+    stereo = pipeline.create(dai.node.StereoDepth)
+    stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
+    stereo.setLeftRightCheck(True)
+    stereo.setSubpixel(True)
+    stereo.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
+    stereo.setDepthAlign(dai.CameraBoardSocket.RGB)
 
-    # Tworzymy outputy do przesyłania obrazów
+    # === Połączenia ===
+    mono_left.out.link(stereo.left)
+    mono_right.out.link(stereo.right)
+
+    # === Outputy ===
     xout_rgb = pipeline.create(dai.node.XLinkOut)
     xout_rgb.setStreamName("video")
+    cam_rgb.video.link(xout_rgb.input)
+
     xout_depth = pipeline.create(dai.node.XLinkOut)
     xout_depth.setStreamName("depth")
-    cam_rgb.video.link(xout_rgb.input)
-    cam_depth.depth.link(xout_depth.input)
+    stereo.depth.link(xout_depth.input)
 
-    # Uruchamiamy urządzenie i pipeline
     with dai.Device(pipeline) as device:
-        # Kolejki do odbierania wideo RGB i głębi
         q_rgb = device.getOutputQueue(name="video", maxSize=8, blocking=False)
         q_depth = device.getOutputQueue(name="depth", maxSize=8, blocking=False)
 
         gesture_dir = os.path.join(output_dir, gesture_name)
         os.makedirs(gesture_dir, exist_ok=True)
 
+        # Znajdź kolejny numer pliku
+        def get_next_file_number(gesture_name):
+            gesture_dir = os.path.join("gestures_data", gesture_name)
+            os.makedirs(gesture_dir, exist_ok=True)
+
+            existing_files = [f for f in os.listdir(gesture_dir)
+                              if f.startswith(f"{gesture_name}_") and f.endswith("_positions.csv")]
+
+            numbers = []
+            for f in existing_files:
+                parts = f.replace("_positions.csv", "").split("_")
+                if len(parts) == 2 and parts[1].isdigit():
+                    numbers.append(int(parts[1]))
+
+            return max(numbers) + 1 if numbers else 1
+
         file_number = get_next_file_number(gesture_name)
         csv_path = os.path.join(gesture_dir, f"{gesture_name}_{file_number:02d}_positions.csv")
 
-        # Pliki wideo RGB i Depth
+        # Poczekaj na pierwsze klatki
+        frame_rgb = q_rgb.get().getCvFrame()
+        frame_depth = q_depth.get().getCvFrame()
+
         video_rgb_path = os.path.join(gesture_dir, f"{gesture_name}_rgb.avi")
         video_depth_path = os.path.join(gesture_dir, f"{gesture_name}_depth.avi")
 
         fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out_rgb = cv2.VideoWriter(video_rgb_path, fourcc, 20.0, (1920, 1080))
-        out_depth = cv2.VideoWriter(video_depth_path, fourcc, 20.0, (512, 424))
+        out_rgb = cv2.VideoWriter(video_rgb_path, fourcc, 20.0, (frame_rgb.shape[1], frame_rgb.shape[0]))
+        out_depth = cv2.VideoWriter(video_depth_path, fourcc, 20.0, (frame_depth.shape[1], frame_depth.shape[0]))
 
-        frame_count = 0
         print(f"🔴 Nagrywanie gestu '{gesture_name}'... Wciśnij 'q' aby zakończyć.")
 
+        # Utwórz plik CSV z nagłówkiem
+        with open(csv_path, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["frame", "x", "y", "z", "hand"])
+
+        frame_count = 0
+        start_time = time.time()
+
         while True:
-            # Odbieranie klatek RGB i Depth
-            frame_rgb = q_rgb.get()
-            frame_depth = q_depth.get()
+            in_rgb = q_rgb.get()
+            in_depth = q_depth.get()
 
-            rgb_image = frame_rgb.getCvFrame()
-            depth_image = frame_depth.getCvFrame()
+            rgb_image = in_rgb.getCvFrame()
+            depth_image = in_depth.getFrame()
 
-            # Zapisz wideo RGB i Depth
             out_rgb.write(rgb_image)
             depth_colored = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
             out_depth.write(depth_colored)
 
-            # Przygotowanie do zapisania danych o trajektorii dłoni
-            rgb_frame_rgb = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
-            results = hands.process(rgb_frame_rgb)
+            rgb_input = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
+            results = hands.process(rgb_input)
 
-            if results.multi_hand_landmarks:
+            if results.multi_hand_landmarks and results.multi_handedness:
                 with open(csv_path, mode="a", newline="") as file:
                     writer = csv.writer(file)
-                    for landmarks in results.multi_hand_landmarks:
+                    for idx, landmarks in enumerate(results.multi_hand_landmarks):
+                        hand_label = results.multi_handedness[idx].classification[0].label
                         for landmark in landmarks.landmark:
-                            writer.writerow([frame_count, landmark.x, landmark.y, landmark.z])
+                            writer.writerow([frame_count, landmark.x, landmark.y, landmark.z, hand_label])
                         mp_drawing.draw_landmarks(rgb_image, landmarks, mp_hands.HAND_CONNECTIONS)
 
-            # Pokaż wideo RGB i Depth
             cv2.imshow("RGB Video", rgb_image)
             cv2.imshow("Depth Video", depth_colored)
 
             frame_count += 1
-
-            # Sprawdzenie, czy użytkownik chce zakończyć nagrywanie
-            key = cv2.waitKey(1) & 0xFF
-            if key == ord('q') or cv2.getWindowProperty('RGB Video', cv2.WND_PROP_VISIBLE) < 1:
+            if cv2.waitKey(1) & 0xFF == ord('q'):
                 print("✅ Nagrywanie zakończone!")
+                break
+
+            if time.time() - start_time >= max_time:
+                print("⏹️ Czas nagrania upłynął.")
                 break
 
         out_rgb.release()
         out_depth.release()
         cv2.destroyAllWindows()
 
-# 🎞 Animacja gestu
-def animate_gesture(gesture_name):
-    """Tworzy animację dla podanego gestu."""
-    gesture_dir = os.path.join(output_dir, gesture_name)
-    csv_files = [f for f in os.listdir(gesture_dir) if f.endswith("_positions.csv")]
-
-    if not csv_files:
-        print(f"❌ Brak danych dla gestu '{gesture_name}'.")
-        return
-
-    print("📂 Dostępne pliki CSV:")
-    for i, file in enumerate(csv_files, start=1):
-        print(f"{i}. {file}")
-
-    choice = int(input("Wybierz numer pliku do animacji: ")) - 1
-    if choice < 0 or choice >= len(csv_files):
-        print("❌ Niepoprawny wybór.")
-        return
-
-    csv_path = os.path.join(gesture_dir, csv_files[choice])
-    data = pd.read_csv(csv_path, names=["frame", "x", "y", "z"])
-
-    fig, ax = plt.subplots()
-    ax.set_xlim(0, 1)
-    ax.set_ylim(1, 0)
-    ax.set_title(f"Animacja gestu: {gesture_name}")
-
-    scatter, = ax.plot([], [], "ro", markersize=5)
-
-    def update(frame):
-        current_data = data[data["frame"] == frame]
-        scatter.set_data(current_data["x"], current_data["y"])
-        return scatter,
-
-    ani = animation.FuncAnimation(fig, update, frames=int(data["frame"].max()), interval=50, blit=True)
-    plt.show()
 
 # 📊 Wizualizacja 3D trajektorii dłoni
 def plot_finger_positions_3D(gesture_name):
@@ -236,24 +205,44 @@ def plot_finger_positions_3D(gesture_name):
 
 # 🏆 Główne menu użytkownika
 def main():
-    print("""🎮 Wybierz tryb:
-    1. 🔴 Nagrywanie nowego gestu
-    2. 🎥 Animacja istniejącego gestu
-    3. 📊 Wizualizacja trajektorii dłoni w 3D
-    4. ❌ Wyjście""")
-    choice = input("Wybierz opcję: ")
-    if choice == "1":
-        gesture_name = input("Podaj nazwę gestu: ")
-        record_gesture(gesture_name)
-    elif choice == "2":
-        gesture_name = input("Podaj nazwę gestu do animacji: ")
-        animate_gesture(gesture_name)
-    elif choice == "3":
-        gesture_name = input("Podaj nazwę gestu do wizualizacji: ")
-        plot_finger_positions_3D(gesture_name)
-    elif choice == "4":
-        exit()
+    print("👋 Witaj w systemie nagrywania i analizy gestów")
+    gesture_name = input("📁 Podaj nazwę gestu (np. shake, wave): ").strip()
+
+    while True:
+        print(f"""\n🎮 Wybierz tryb dla gestu '{gesture_name}':
+        1. 🔴 Nagrywanie nowego gestu (RGB + Depth + Pozycje dłoni)
+        2. 🎥 Animacja istniejącego gestu
+        3. 📊 Wizualizacja trajektorii dłoni w 3D
+        4. 🏁 Zmień nazwę gestu
+        5. ❌ Wyjście
+        """)
+        choice = input("Wybierz opcję: ").strip()
+
+        if choice == "1":
+            record_gesture(gesture_name)
+        elif choice == "2":
+            animate_gesture(gesture_name)
+        elif choice == "3":
+            plot_finger_positions_3D(gesture_name)
+        elif choice == "4":
+            gesture_name = input("🔁 Podaj nową nazwę gestu: ").strip()
+        elif choice == "5":
+            print("👋 Zakończono program.")
+            break
+        else:
+            print("❌ Niepoprawny wybór. Spróbuj ponownie.")
 
 if __name__ == "__main__":
     while True:
         main()
+
+
+# #
+# Co można jeszcze ulepszyć w przyszłości (opcjonalnie):
+# 🧠 Rozróżnienie lewej i prawej dłoni (jeśli chcesz rozpoznawać gesty obiema rękami),
+#
+# 📥 Automatyczna konwersja CSV → .npy po nagraniu,
+#
+# 🛑 Dodanie limitu nagrania (np. 10 sek), żeby nie nagrać za dużo przypadkowo,
+#
+# 📦 Możliwość wyboru liczby klatek, fps lub rozdzielczości przez użytkownika
