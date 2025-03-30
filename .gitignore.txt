@@ -1,12 +1,28 @@
-# Ignorowanie folderu z danymi
-project_files\gestures_data
-
-# Ignorowanie folderu projektu .idea
+# 🔧 Pliki IDE
 .idea/
+__pycache__/
 
-# Ignorowanie plików ZIP
-shake.zip
+# 🧠 Dane i nagrania gestów
+gestures_data/
+**/gestures_data/
 
-# Ignorowanie środowisk wirtualnych
-env38/
+project_files/gestures_data/
+project_files/compressed_data/
 
+# 🎥 Pliki wideo i dane z kamer
+*.avi
+*.csv
+*.npy
+
+# 🧪 Modele
+gesture_model.pt
+*.pt
+
+# 🛠️ Pomocnicze skrypty (opcjonalnie)
+project_files/tools_gesture_debug.py
+project_files/virtual_mouse.py
+
+# 📄 Pliki tymczasowe / testowe
+*.log
+*.tmp
+*.bak
