@@ -1,13 +1,15 @@
-# 🔧 Pliki IDE
+# 🔧 Pliki IDE i cache
 .idea/
 __pycache__/
 
 # 🧠 Dane i nagrania gestów
 gestures_data/
+project_files/gestures_data/
 **/gestures_data/
 
-project_files/gestures_data/
+# 📦 Spakowane dane i backupy
 project_files/compressed_data/
+*.zip
 
 # 🎥 Pliki wideo i dane z kamer
 *.avi
@@ -18,11 +20,11 @@ project_files/compressed_data/
 gesture_model.pt
 *.pt
 
-# 🛠️ Pomocnicze skrypty (opcjonalnie)
+# 🛠️ Skrypty pomocnicze (opcjonalnie)
 project_files/tools_gesture_debug.py
 project_files/virtual_mouse.py
 
-# 📄 Pliki tymczasowe / testowe
+# 📄 Pliki tymczasowe / systemowe
 *.log
 *.tmp
 *.bak
