@@ -33,6 +33,7 @@ import time
 from collections import deque
 from train_gesture_lstm import GestureLSTM
 from gesture_control import handle_gesture
+from virtual_mouse import mouse_control_from_gestures
 
 
 # === DEBUG: logowanie gestów do pliku ===
@@ -57,7 +58,8 @@ last_time = 0
 cooldown_time = 2  # sekundy
 min_stable_count = 5
 stable_counter = 0
-                    log_event(f"Nowy gest wykryty: {label}")
+
+log_event(f"Nowy gest wykryty: {label}")
 
 # === Inicjalizacja modelu ===
 model = GestureLSTM()
@@ -101,6 +103,25 @@ def run_live_prediction():
             results = hands.process(rgb_input)
 
             if results.multi_hand_landmarks:
+
+                left_hand = None
+                right_hand = None
+                handedness = results.multi_handedness
+                for idx, hand_landmarks in enumerate(results.multi_hand_landmarks):
+                    label = handedness[idx].classification[0].label
+                    coords = []
+                    for lm in hand_landmarks.landmark:
+                        coords.append((lm.x, lm.y, lm.z))
+                    if label == "Left":
+                        left_hand = coords
+                    elif label == "Right":
+                        right_hand = coords
+
+                # Sterowanie myszką na podstawie obu dłoni
+                mouse_status = mouse_control_from_gestures(left_hand, right_hand)
+                mouse_status_label = mouse_status
+                mouse_status_time = time.time()
+
                 landmarks = results.multi_hand_landmarks[0]
                 coords = []
                 for lm in landmarks.landmark:
@@ -136,6 +157,14 @@ def run_live_prediction():
 
             cv2.putText(frame, f"Frames: {len(sequence)}/{sequence_length}", (10, 70),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
+
+            
+            # === Overlay: tryb myszki ===
+            if mouse_status_label and time.time() - mouse_status_time < 2:
+                cv2.rectangle(frame, (10, 130), (400, 170), (0, 0, 0), -1)
+                cv2.putText(frame, mouse_status_label, (20, 160),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
+
 
             cv2.imshow("🟢 Rozpoznawanie gestów", frame)
             if cv2.waitKey(1) & 0xFF == ord('q'):

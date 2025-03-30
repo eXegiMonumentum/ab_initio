@@ -3,8 +3,7 @@
 2️⃣ Przygotowanie danych (prepare_gesture_data.py)
 3️⃣ Trening modelu (train_gesture_lstm.py)
 4️⃣ Ewaluacja modelu (evaluate_model.py)
-5️⃣ 🔜 (opcjonalnie) Rozpoznawanie gestów na żywo z kamery (predict_live.py)
-
+5️⃣ Rozpoznawanie gestów na żywo z kamery (predict_live.py)
 """
 
 """

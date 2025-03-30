@@ -1,12 +1,17 @@
 """
-train_gesture_lstm.py
+1️⃣ Nagrywanie danych (gesture_record.py)
+2️⃣ Przygotowanie danych (prepare_gesture_data.py)
+3️⃣ Trening modelu (train_gesture_lstm.py)
+4️⃣ Ewaluacja modelu (evaluate_model.py)
+5️⃣ Rozpoznawanie gestów na żywo z kamery (predict_live.py)
+"""
 
+""""
 !!!
 Ten skrypt zakłada, że wcześniej uruchomiłeś prepare_gesture_data.py, który zapisał:
 
 X_gestures.npy – sekwencje (num_samples, 100, 63),
 y_gestures.npy – etykiety (num_samples,)
-
 !!!
 
 Trenuje model LSTM do klasyfikacji gestów dłoni na podstawie danych 3D (x, y, z) z MediaPipe.
@@ -41,6 +46,7 @@ X_train, X_test, y_train, y_test = train_test_split(X_tensor, y_tensor, test_siz
 train_loader = DataLoader(TensorDataset(X_train, y_train), batch_size=16, shuffle=True)
 test_loader = DataLoader(TensorDataset(X_test, y_test), batch_size=16)
 
+
 # === Definicja modelu LSTM ===
 class GestureLSTM(nn.Module):
     def __init__(self, input_size=63, hidden_size=128, num_classes=2):
@@ -52,6 +58,7 @@ class GestureLSTM(nn.Module):
         out, _ = self.lstm(x)
         out = out[:, -1, :]  # tylko ostatnia klatka czasowa
         return self.fc(out)
+
 
 # === Inicjalizacja modelu, funkcji straty i optymalizatora ===
 model = GestureLSTM()
@@ -68,7 +75,12 @@ for epoch in range(num_epochs):
         loss = criterion(outputs, batch_y)
         loss.backward()
         optimizer.step()
-    print(f"Epoka {epoch+1} - Strata: {loss.item():.4f}")
+    print(f"Epoka {epoch + 1} - Strata: {loss.item():.4f}")
+
+# === Zapisz wytrenowany model do pliku ===
+model_path = "gesture_model.pt"
+torch.save(model.state_dict(), model_path)
+print(f"💾 Model zapisany jako {model_path}")
 
 # === Ewaluacja skuteczności modelu ===
 model.eval()

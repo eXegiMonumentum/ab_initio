@@ -1,10 +1,38 @@
-# Przechowuje funkcje dla gesture record.
+"""
+przechowuje funkcje dla 1️⃣gesture_record.py)
+"""
 import os
 import shutil
 import matplotlib.animation as animation
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+
+
+import zipfile
+import os
+
+import zipfile
+import os
+
+def zip_gesture_data_snapshot(output_path="gestures_snapshot.zip", data_dir="gestures_data"):
+    """
+    Pakuje cały folder gestures_data do pliku ZIP.
+    Przydatne np. przed wrzuceniem danych na GitHub.
+    """
+    os.makedirs("compressed_data", exist_ok=True)
+    zip_path = os.path.join("compressed_data", output_path)
+
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(data_dir):
+            for file in files:
+                full_path = os.path.join(root, file)
+                rel_path = os.path.relpath(full_path, start=data_dir)
+                zipf.write(full_path, arcname=rel_path)
+
+    print(f"✅ Spakowano {data_dir} → {zip_path}")
+
+
 
 
 def rename_gesture(old_name, new_name):
@@ -136,3 +164,5 @@ def plot_finger_positions_3D(gesture_name):
 
     ani = animation.FuncAnimation(fig, update, frames=int(data["frame"].max()), interval=50, blit=False)
     plt.show()
+
+
