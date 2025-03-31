@@ -1,0 +1,14 @@
+✋ stop – klawisz: Spacja
+Opis gestu:
+Klaśnięcie obu dłoni na wysokości twarzy lub nieco poniżej – energiczne i zdecydowane, jakbyś chciał zatrzymać akcję lub przyciągnąć uwagę.
+
+Sugestie techniczne:
+
+Dłonie powinny być otwarte i widoczne dla kamery tuż przed klaśnięciem.
+
+Klaśnięcie może być pojedyncze, nie za szybkie – aby MediaPipe zarejestrowało pozycję obu dłoni.
+
+Ruch powinien być w osi poziomej, nie za wysoko ani za nisko.
+
+Zastosowanie w Foldit:
+Gest stop działa jak naciśnięcie spacji – zatrzymuje trwającą akcję (np. animację wiggle) albo odznacza wszystkie segmenty, jeśli żadna akcja nie trwa.
